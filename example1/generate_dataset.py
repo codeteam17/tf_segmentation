@@ -1,10 +1,11 @@
 import cv2
 import numpy as np
 
-num_of_images = 100
+num_of_images = 1000
 lines_per_image = 3
 
 output_dir = '/Users/peric/dev/tensorflow-code/example1/data'
+output_dir = '/home/igor/dev/tf_segmentation/example1/data'
 target_size = (240, 320, 1)
 out_size = (20, 15)
 

@@ -12,7 +12,7 @@ import numpy as np
 # Parameters
 learning_rate = 0.001
 training_iters = 18
-batch_size = 5
+batch_size = 10
 display_step = 1
 
 # Network Parameters
@@ -24,6 +24,7 @@ dropout = 0.75 # Dropout, probability to keep units
 
 
 data_dir = '/Users/peric/dev/tensorflow-code/example1/data'
+data_dir = '/home/igor/dev/tf_segmentation/example1/data'
 import dataset_helpers
 print("Fetching file names...")
 X_files, Y_files = dataset_helpers.get_filenames(data_dir)
@@ -44,6 +45,7 @@ def conv2d(x, W, b, strides=1):
     x = tf.nn.conv2d(x, W, strides=[1, strides, strides, 1], padding='SAME')
     x = tf.nn.bias_add(x, b)
     x = tf.nn.relu(x)
+    x = tf.nn.l2_normalize(x, 0)
     return x
 
 def maxpool2d(x, k=2):
@@ -72,7 +74,12 @@ def conv_net(x, weights, biases, dropout, num_of_layers = 20):
     conv3 = maxpool2d(conv3, k=2)
 
     # Convolution Layer
-    conv4 = conv2d(conv3, weights['wc4'], biases['bc4'])
+    conv4 = tf.nn.conv2d(conv3, weights['wc4'], strides=[1, 1, 1, 1], padding='SAME')
+    #conv4 = conv2d(conv3, weights['wc4'], biases['bc4'])
+    #conv4 = tf.nn.l2_normalize(conv4, 0)
+    
+    
+    
     # Max Pooling (down-sampling)
     # print(prev.get_shape())
     # out = tf.reshape(prev, [-1, n_classes, 2])
@@ -135,6 +142,7 @@ tf.image_summary('conv1/features', grid, max_images=1)
 
 # Evaluate model
 t = tf.nn.softmax(reshaped_logits)
+#t = reshaped_logits
 prob_maps = tf.reshape(t, [-1, out_size[1], out_size[0], 2])
 t = tf.cast(tf.argmax(prob_maps, 3), tf.int32)
 out = tf.reshape(t, [-1, out_size[1], out_size[0]])
@@ -180,7 +188,12 @@ with tf.Session() as sess:
         batch_start = batch_end
         batch_end += batch_size
 
-        p, prob_map = sess.run([ out, prob_maps ], feed_dict={x: X[:20], y: Y[:20], keep_prob: 1.0})
+        p, prob_map, logits = sess.run([ out, prob_maps, reshaped_logits ], feed_dict={x: X[:20], y: Y[:20], keep_prob: 1.0})
+
+        print('boooooo 0')
+        print(min(logits[:,0]), max(logits[:,0]))
+        print('boooooo 1')
+        print(min(logits[:,1]), max(logits[:,1]))
 
         # broadcast summary for TensorBoard
         weights = tf.get_variable('wc1', shape=[3, 3, 1, 32])
@@ -191,20 +204,19 @@ with tf.Session() as sess:
 
         img1 = p[0]
         print(img1)
-        print(Y[0].reshape([out_size[1], out_size[0]]))
+        print(Y[0].reshape([out_size[0], out_size[1]]).T)
 
         print(img1.shape)
         img1 = np.float32(img1)
-        img1 = cv2.resize(img1, (300,300))
+        img1 = cv2.resize(img1, (size[0], size[1]))
 
         cv2.imshow("label", img1)
 
-        print(prob_map.shape)
         # visualize maps
         prob_0 = np.float32(prob_map[0,:,:,0])
-        prob_0 = cv2.resize(prob_0, (300, 300))
+        prob_0 = cv2.resize(prob_0, (size[0], size[1]))
         prob_1 = np.float32(prob_map[0,:,:,1])
-        prob_1 = cv2.resize(prob_1, (300, 300))
+        prob_1 = cv2.resize(prob_1, (size[0], size[1]))
         cv2.imshow("prob_0", prob_0)
         cv2.imshow("prob_1", prob_1)
 
