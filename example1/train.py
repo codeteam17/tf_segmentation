@@ -75,7 +75,6 @@ def conv_net(x, weights, biases, dropout, num_of_layers = 20):
 
     # Convolution Layer
     conv4 = tf.nn.conv2d(conv3, weights['wc4'], strides=[1, 1, 1, 1], padding='SAME')
-    #conv4 = conv2d(conv3, weights['wc4'], biases['bc4'])
     #conv4 = tf.nn.l2_normalize(conv4, 0)
     
     
@@ -204,7 +203,7 @@ with tf.Session() as sess:
 
         img1 = p[0]
         print(img1)
-        print(Y[0].reshape([out_size[0], out_size[1]]).T)
+        print(Y[0].reshape([out_size[1], out_size[0]]))
 
         print(img1.shape)
         img1 = np.float32(img1)

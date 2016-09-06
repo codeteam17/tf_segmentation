@@ -28,7 +28,7 @@ for i in range(num_of_images):
         cv2.line(img, start_point, end_point, color)
     
     # draw the target shape
-    rec_size = int(target_size[0] * 0.4)
+    rec_size = int(target_size[0] * 0.1)
     start_point = ( int(np.random.uniform(0, target_size[1] - rec_size)), int(np.random.uniform(0, target_size[0]-rec_size)) ) 
     end_point = ( start_point[0] + rec_size, start_point[1] + rec_size )
     cv2.rectangle(img, start_point, end_point, color, 1)
