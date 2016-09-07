@@ -12,7 +12,7 @@ import numpy as np
 # Parameters
 learning_rate = 0.001
 training_iters = 18
-batch_size = 10
+batch_size = 30
 display_step = 1
 
 # Network Parameters
@@ -24,7 +24,7 @@ dropout = 0.75 # Dropout, probability to keep units
 
 
 data_dir = '/Users/peric/dev/tensorflow-code/example1/data'
-data_dir = '/home/igor/dev/tf_segmentation/example1/data'
+#data_dir = '/home/igor/dev/tf_segmentation/example1/data'
 import dataset_helpers
 print("Fetching file names...")
 X_files, Y_files = dataset_helpers.get_filenames(data_dir)
@@ -56,25 +56,25 @@ def maxpool2d(x, k=2):
 # Create model
 def conv_net(x, weights, biases, dropout, num_of_layers = 20):
     # Reshape input picture
-    x = tf.reshape(x, shape=[-1, size[0], size[1], 1])
+    x = tf.reshape(x, shape=[-1, size[1], size[0], 1])
 
     # Convolution Layer
-    conv1 = conv2d(x, weights['wc1'], biases['bc1'])
+    conv1 = conv2d(x, weights['wc1'], biases['bc1'], strides=2)
     # Max Pooling (down-sampling)
-    conv1 = maxpool2d(conv1, k=2)
+    conv1 = maxpool2d(conv1, k=4)
 
     # Convolution Layer
-    conv2 = conv2d(conv1, weights['wc2'], biases['bc2'])
-    # Max Pooling (down-sampling)
-    conv2 = maxpool2d(conv2, k=2)
+    # conv2 = conv2d(conv1, weights['wc2'], biases['bc2'], strides=1)
+    # # Max Pooling (down-sampling)
+    # conv2 = maxpool2d(conv2, k=2)
+
+    # # Convolution Layer
+    # conv3 = conv2d(conv2, weights['wc3'], biases['bc3'], strides=1)
+    # # Max Pooling (down-sampling)
+    # conv3 = maxpool2d(conv3, k=2)
 
     # Convolution Layer
-    conv3 = conv2d(conv2, weights['wc3'], biases['bc3'], strides=2)
-    # Max Pooling (down-sampling)
-    conv3 = maxpool2d(conv3, k=2)
-
-    # Convolution Layer
-    conv4 = tf.nn.conv2d(conv3, weights['wc4'], strides=[1, 1, 1, 1], padding='SAME')
+    conv4 = tf.nn.conv2d(conv1, weights['wc4'], strides=[1, 2, 2, 1], padding='SAME')
     #conv4 = tf.nn.l2_normalize(conv4, 0)
     
     
@@ -101,12 +101,12 @@ def conv_net(x, weights, biases, dropout, num_of_layers = 20):
 # Store layers weight & bias
 weights = {
     # 5x5 conv, 1 input, 32 outputs
-    'wc1': tf.Variable(tf.random_normal([11, 11, 1, 32]), name="wc1"), # out: 320x240
+    'wc1': tf.Variable(tf.random_normal([5, 5, 1, 16]), name="wc1"), # out: 320x240
     # 5x5 conv, 32 inputs, 64 outputs
-    'wc2': tf.Variable(tf.random_normal([7, 7, 32, 128])), # 160x120
+    'wc2': tf.Variable(tf.random_normal([3, 3, 16, 32])), # 160x120
     # 5x5 conv, 32 inputs, 64 outputs
-    'wc3': tf.Variable(tf.random_normal([3, 3, 128, n_classes])), # 40x30
-    'wc4': tf.Variable(tf.random_normal([3, 3, n_classes, 2])), # 20x15
+    'wc3': tf.Variable(tf.random_normal([3, 3, 32, 16])), # 40x30
+    'wc4': tf.Variable(tf.random_normal([15, 20, 16, 2])), # 20x15
     # fully connected, 7*7*64 inputs, 1024 outputs
     #'wd1': tf.Variable(tf.random_normal([n_classes, 1])),
     # 1024 inputs, 10 outputs (class prediction)
@@ -114,9 +114,9 @@ weights = {
 }
 
 biases = {
-    'bc1': tf.Variable(tf.random_normal([32])),
-    'bc2': tf.Variable(tf.random_normal([128])),
-    'bc3': tf.Variable(tf.random_normal([n_classes])),
+    'bc1': tf.Variable(tf.random_normal([16])),
+    'bc2': tf.Variable(tf.random_normal([32])),
+    'bc3': tf.Variable(tf.random_normal([16])),
     'bc4': tf.Variable(tf.random_normal([2])),
     #'bd1': tf.Variable(tf.random_normal([n_classes])),
     #'out': tf.Variable(tf.random_normal([n_classes]))
@@ -130,14 +130,16 @@ pred = conv_net(x, weights, biases, keep_prob)
 reshaped_logits = tf.reshape(pred, [-1, 2])  # shape [batch_size*256*256, 33]
 reshaped_labels = tf.reshape(y, [-1])  # shape [batch_size*256*256]
 
+import loss
+#L = loss.loss(reshaped_logits, reshaped_labels, 2)
 loss = tf.nn.sparse_softmax_cross_entropy_with_logits(reshaped_logits, reshaped_labels)
 cost = tf.reduce_mean(loss)
-optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(cost)
+optimizer = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss)
 
 # broadcast summary for TensorBoard
-grid_x, grid_y = 4, 8   # to get a square grid for 64 conv1 features
-grid = dataset_helpers.put_kernels_on_grid (weights['wc1'], (grid_y, grid_x))
-tf.image_summary('conv1/features', grid, max_images=1)
+# grid_x, grid_y = 4, 8   # to get a square grid for 64 conv1 features
+# grid = dataset_helpers.put_kernels_on_grid (weights['wc1'], (grid_y, grid_x))
+# tf.image_summary('conv1/features', grid, max_images=1)
 
 # Evaluate model
 t = tf.nn.softmax(reshaped_logits)
@@ -169,7 +171,6 @@ with tf.Session() as sess:
         X, Y = dataset_helpers.read_dataset(X_files, Y_files, n_input, size, out_size, batch_start, batch_end)
 
         batch_x, batch_y = X, Y
-        print(batch_y.shape)
 
         # Run optimization op (backprop)
         sess.run(optimizer, feed_dict={x: batch_x, y: batch_y,
@@ -195,11 +196,11 @@ with tf.Session() as sess:
         print(min(logits[:,1]), max(logits[:,1]))
 
         # broadcast summary for TensorBoard
-        weights = tf.get_variable('wc1', shape=[3, 3, 1, 32])
-        tf.get_variable_scope().reuse_variables()
-        grid_x, grid_y = 4, 8   # to get a square grid for 32 conv1 features
-        grid = dataset_helpers.put_kernels_on_grid (weights, (grid_y, grid_x))
-        tf.image_summary('conv1/features', grid, max_images=1)
+        # weights = tf.get_variable('wc1', shape=[3, 3, 1, 32])
+        # tf.get_variable_scope().reuse_variables()
+        # grid_x, grid_y = 4, 8   # to get a square grid for 32 conv1 features
+        # grid = dataset_helpers.put_kernels_on_grid (weights, (grid_y, grid_x))
+        # tf.image_summary('conv1/features', grid, max_images=1)
 
         img1 = p[0]
         print(img1)

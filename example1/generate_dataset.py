@@ -1,11 +1,11 @@
 import cv2
 import numpy as np
 
-num_of_images = 1000
-lines_per_image = 3
+num_of_images = 2000
+lines_per_image = 0
 
 output_dir = '/Users/peric/dev/tensorflow-code/example1/data'
-output_dir = '/home/igor/dev/tf_segmentation/example1/data'
+#output_dir = '/home/igor/dev/tf_segmentation/example1/data'
 target_size = (240, 320, 1)
 out_size = (20, 15)
 
@@ -19,16 +19,16 @@ for i in range(num_of_images):
 
     # placeholder for groundtruth image
     img_out = np.zeros(target_size, dtype=np.uint8)
-
+    color = (255, 0, 255)
     # draw random lines (noise)
     for j in range(lines_per_image):
         start_point = ( int(np.random.uniform(0, target_size[1])), int(np.random.uniform(0, target_size[0])) )
         end_point = ( int(np.random.uniform(0, target_size[1])), int(np.random.uniform(0, target_size[0])) )
-        color = (255, 0, 255)
+        
         cv2.line(img, start_point, end_point, color)
     
     # draw the target shape
-    rec_size = int(target_size[0] * 0.1)
+    rec_size = int(target_size[0] * 0.2)
     start_point = ( int(np.random.uniform(0, target_size[1] - rec_size)), int(np.random.uniform(0, target_size[0]-rec_size)) ) 
     end_point = ( start_point[0] + rec_size, start_point[1] + rec_size )
     cv2.rectangle(img, start_point, end_point, color, 1)

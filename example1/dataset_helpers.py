@@ -14,7 +14,6 @@ def read_dataset(input_filenames, out_filenames, n_input, size, out_size, start_
 
         # load input
         img = cv2.imread(input_filenames[i], 0) # load image as grayscale
-        print('shape: {}'.format(img.shape))
         #img = cv2.resize(img, (size[0], size[1]))
         img = img.reshape([1, n_input]).astype(float)
         img /= 255.0
